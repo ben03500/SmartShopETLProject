@@ -30,6 +30,7 @@ class DataFactory:
         """
             Read customer transaction data from a csv file
         """
+        logger.info(f"Reading the source CSV file.")
         try:
             df = pd.read_json(filepath)
             df.timestamp = pd.to_datetime(df['timestamp'])
@@ -42,6 +43,7 @@ class DataFactory:
         """
             Read product catalog data from a json file
         """
+        logger.info(f"Reading the source JSON file.")
         try:
             return pd.read_csv(filepath)
         except IOError as e:
@@ -107,15 +109,21 @@ class ETLOrchestrator:
 
     @property
     def dim_time_df(self):
+        # extract the relevant timestamps from the transaction data
         df = self.customer_transaction_df[['timestamp']]
-        df['date'] = df['timestamp'].dt.date
-        df = df.drop_duplicates(subset='date', keep='first')
-        df['year'] = df['timestamp'].dt.year
-        df['quarter'] = df['timestamp'].dt.to_period('Q').astype(str)
-        df['month'] = df['timestamp'].dt.month
-        df['day'] = df['timestamp'].dt.day
-        df = df.drop(columns=['timestamp'])
-        return df
+        # generate a complete date range from the minimum to the maximum date
+        min_dt = df['timestamp'].min()
+        max_dt = df['timestamp'].max()
+        dt_range = pd.date_range(start=min_dt, end=max_dt)
+        # create a dataframe from the date range
+        date_df = pd.DataFrame(dt_range, columns=['timestamp'])
+        date_df['date'] = date_df['timestamp'].dt.date
+        date_df = date_df.drop_duplicates(subset="date", keep="first")
+        date_df['year'] = date_df['timestamp'].dt.year
+        date_df['month'] = date_df['timestamp'].dt.month
+        date_df['day'] = date_df['timestamp'].dt.day
+        date_df = date_df.drop(columns=['timestamp'])
+        return date_df
 
     @property
     def fact_sale_df(self):
