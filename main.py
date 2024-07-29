@@ -13,12 +13,23 @@ import sqlalchemy as sa
 
 import config as cfg
 
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(logging.INFO)
+stream_handler.setFormatter(logging.Formatter('%(asctime)s %(name)-20s %(levelname)-8s %(message)s'))
+
+logging.getLogger().addHandler(stream_handler)
+
 logger = logging.getLogger()
+
+logger.setLevel(logging.INFO)
 
 
 class DataFactory:
     @staticmethod
-    def customer_transaction(filepath):
+    def customer_transaction(filepath) -> pd.DataFrame:
+        """
+            Read customer transaction data from a csv file
+        """
         try:
             df = pd.read_json(filepath)
             df.timestamp = pd.to_datetime(df['timestamp'])
@@ -27,7 +38,10 @@ class DataFactory:
             print(f"Error reading the customer transaction file: {e}")
 
     @staticmethod
-    def product_catalog(filepath):
+    def product_catalog(filepath) -> pd.DataFrame:
+        """
+            Read product catalog data from a json file
+        """
         try:
             return pd.read_csv(filepath)
         except IOError as e:
@@ -35,27 +49,36 @@ class DataFactory:
 
 
 class ETLOrchestrator:
-    def __init__(self, filepath_dict, database_connection_url):
+    def __init__(self, filepath_dict, database_connection_url) -> None:
+        self._data = DataFactory()
         self.filepath_dict = filepath_dict
         self.connection_url = database_connection_url
-        self._data = DataFactory()
 
     @property
     def customer_transaction_df(self) -> pd.DataFrame:
+        """
+            Retrieve the customer transactions data
+        """
         return self._data.customer_transaction(self.filepath_dict["transaction"])
 
     @property
     def product_catalog_df(self) -> pd.DataFrame:
+        """
+            Retrieve and clean the product catalog detail from data/product_catalog.csv file
+        """
         df = self._data.product_catalog(self.filepath_dict["product"])
-        df['price'] = pd.to_numeric(df['price'], errors='coerce')
+        # check and drop duplicated products based on their IDs
         duplicate_count = df.duplicated(subset='product_id').sum()
         if duplicate_count > 0:
             logger.warning(f"Number of duplicate product IDs: {duplicate_count}")
         df = df.drop_duplicates(subset='product_id', keep='first')
+        # check and nullify the prices that are negatives or could not been converted to numbers
+        df['price'] = pd.to_numeric(df['price'], errors='coerce')
         invalid_price_count = df['price'].isna().sum() + (df['price'] < 0).sum()
         if invalid_price_count > 0:
             logger.warning(f"Number of invalid prices: {invalid_price_count}")
         df['price'] = df['price'].apply(lambda x: x if x >= 0 else None)
+        # check and putting a placeholder for the missing product name
         missing_product_name_count = df['product_name'].isna().sum()
         if missing_product_name_count > 0:
             logger.warning(f"Number of missing product names: {missing_product_name_count}")
@@ -65,12 +88,14 @@ class ETLOrchestrator:
     @property
     def transaction_product_joined_df(self) -> pd.DataFrame:
         df = self.product_catalog_df
+        # outer join product catalog and customer transaction data
         merged_df = df.merge(self.customer_transaction_df, how='outer', on='product_id')
+        # get the product price from customer transaction or product catalog if one or the other is unavailable
         merged_df['price'] = merged_df['price_x'].combine_first(merged_df['price_y'])
         return merged_df
 
     @property
-    def dim_customer_df(self):
+    def dim_customer_df(self) -> pd.DataFrame:
         return self.customer_transaction_df[['customer_id']].drop_duplicates().reset_index(drop=True)
 
     @property
@@ -98,7 +123,12 @@ class ETLOrchestrator:
         df['date'] = df['timestamp'].dt.date
         df = df.drop(columns=['timestamp'])
         df['total_sales'] = df['quantity'] * df['price']
-        return df
+        grouped_df = df.groupby(['date', 'transaction_id', 'customer_id', 'product_id']).agg({
+            'price': 'first',
+            'quantity': 'sum',
+            'total_sales': 'sum'
+        }).reset_index()
+        return grouped_df
 
     def load(self):
         try:
@@ -109,6 +139,7 @@ class ETLOrchestrator:
                 self.dim_product_df.to_sql("product", con=connection, if_exists="replace", index=False)
                 self.dim_time_df.to_sql("time", con=connection, if_exists="replace", index=False)
                 self.fact_sale_df.to_sql("sale", con=connection, if_exists="replace", index=False)
+            logger.info(f"Loaded data to the database.")
         except Exception as e:
             logger.error(f"Error during the loading process: {e}")
 
@@ -118,6 +149,7 @@ def main():
     logger.info(f"Initiating the ShopSmart ETL process.")
     try:
         orchestrator.load()
+        logger.info(f"Completed the ShopSmart ETL process.")
     except Exception as e:
         logger.error(f"Error during the ETL process: {e}")
         raise
