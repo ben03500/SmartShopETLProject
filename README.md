@@ -14,18 +14,18 @@ git clone https://github.com/ben03500/SmartShopETLProject.git
 cd SmartShopETLProject
 ```
 
-2. Create a `.env` file in the root directory of your project and add the following environment variables:
+2. Create a `.env` file in the root directory of the project and add the following environment variables:
 
 ```env
-POSTGRES_DB=your_database_name
-POSTGRES_USER=your_database_user
-POSTGRES_PASSWORD=your_database_password
+POSTGRES_DB=postgres
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your_postgres_password
 DB_PROTOCOL=postgresql+psycopg2
 DB_HOST=db
 DB_PORT=5432
-DB_NAME=your_database_name
-DB_USER=your_database_user
-DB_PASSWORD=your_database_password
+DB_NAME=sales
+DB_USER=serviceaccount
+DB_PASSWORD=your_serviceaccount_password
 ```
 
 3. Check the SQL initialization script (`init_db.sql`) and ensure that the user login credentials match the ones in 
@@ -37,7 +37,8 @@ the `.env` file.
 docker-compose up --build
 ```
 This command will start the PostgreSQL database and the ETL service, which will execute the ETL process defined 
-in `main.py`. The data will be processed and loaded into the PostgreSQL database using a Star Schema model.
+in `main.py`. The data will be processed and loaded into the `sales` database `public` schema following the Star 
+Schema model.
 
 ## Data Model
 

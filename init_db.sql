@@ -1,13 +1,13 @@
-DROP USER IF EXISTS <username>;
+DROP USER IF EXISTS serviceaccount;
 
-CREATE USER <username> WITH PASSWORD '<password>';
+CREATE USER serviceaccount WITH PASSWORD 'your_serviceaccount_password';
 
-DROP DATABASE IF EXISTS <database>;
+DROP DATABASE IF EXISTS sales;
 
-CREATE DATABASE <database>;
+CREATE DATABASE sales;
 
-GRANT ALL PRIVILEGES ON DATABASE <database> TO <username>;
+GRANT ALL PRIVILEGES ON DATABASE sales TO serviceaccount;
 
-\c <database>;
+\c sales;
 
-GRANT ALL PRIVILEGES ON SCHEMA public TO <username>;
+GRANT ALL PRIVILEGES ON SCHEMA public TO serviceaccount;
