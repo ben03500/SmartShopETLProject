@@ -65,14 +65,14 @@ ORDER BY s.total_sale_quantity DESC limit 2
 ```
 ii. What is the average order value per customer?
 
-***Ans**: C001 = $700, C002 = $600, and C003 = $600*
+***Ans**: C001 = 2,800, C002 = $2,400, and C003 = $2,400*
 ```sql
 SELECT customer_id,
 	avg(sum_total_sales) AS avg_total_sales
 FROM (
 	SELECT customer_id,
 		transaction_id,
-		avg(total_sales) AS sum_total_sales
+		sum(total_sales) AS sum_total_sales
 	FROM sale
 	GROUP BY customer_id,
 		transaction_id
