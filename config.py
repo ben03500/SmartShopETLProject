@@ -9,11 +9,11 @@ Python Version: 3.12.4
 import os
 from pathlib import Path
 
-# Define file paths for input data
+# File paths for the input data
 filepaths = {"transaction": Path.cwd() / "data/customer_transactions.json",
              "product": Path.cwd() / "data/product_catalog.csv"}
 
-# Load database configuration from environment variables
+# Load database configuration from environment variables (no input need from users)
 DB_PROTOCOL = os.getenv('DB_PROTOCOL')
 DB_HOST = os.getenv('DB_HOST')
 DB_PORT = os.getenv('DB_PORT')
