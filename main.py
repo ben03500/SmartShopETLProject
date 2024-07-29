@@ -30,7 +30,6 @@ class DataFactory:
         """
             Read customer transaction data from a csv file
         """
-        logger.info(f"Reading the source CSV file.")
         try:
             df = pd.read_json(filepath)
             df.timestamp = pd.to_datetime(df['timestamp'])
@@ -43,7 +42,6 @@ class DataFactory:
         """
             Read product catalog data from a json file
         """
-        logger.info(f"Reading the source JSON file.")
         try:
             return pd.read_csv(filepath)
         except IOError as e:
