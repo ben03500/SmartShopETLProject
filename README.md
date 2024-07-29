@@ -93,7 +93,7 @@ ORDER BY sum(total_sales) DESC
 ## Design Decision
 
 The goal is to create a minimalistic ETL pipeline using an object-oriented approach instead of the more common
-procedural method. This makes the code easier to handle and extend since each class acts like a self-contained module 
+procedural method. This makes the code easier to extend their functionality since each class acts like a self-contained module 
 that would foster the reusability of components. The key ETL logic for processing this transaction data is encapsulated 
 within the `ETLOrchestrator` class. The class consists of properties that manage the lifecycle of data frames—from
 the raw input loaded by the `DataFactory` class through the transformation and to the final state ready for outbound 
